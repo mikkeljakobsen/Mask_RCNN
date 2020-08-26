@@ -29,6 +29,7 @@ import json
 import datetime
 import numpy as np
 import skimage.draw
+import skimage.io
 from pathlib import Path
 
 # Root directory of the project
@@ -90,7 +91,8 @@ class BoxDataset(utils.Dataset):
         assert subset in ["train", "val"]
         dataset_dir = os.path.join(dataset_dir, subset)
 
-        image_paths = list(Path(dataset_dir).glob('*.jpg'))
+        image_paths = list(Path(dataset_dir).glob('*.png'))
+        print("amount of training images:", len(image_paths))
 
         for i, image_path in enumerate(image_paths):
             self.add_image("box", image_id=i,
@@ -105,22 +107,22 @@ class BoxDataset(utils.Dataset):
         """
         info = self.image_info[image_id]
         mask = skimage.io.imread(str(
-            Path(info['path']).parent.parent / 'mask' / '{:04}.png'.format(info['id'])
+            Path(info['path']).parent.parent / 'mask' / info['path'].name
         ))
+        mask = mask != 0
+        return mask.astype(np.int32), np.ones([mask.shape[-1]], dtype=np.int32)
 
-        masks = []
-        class_ids = []
-
-        for class_id in range(1, BoxConfig.NUM_CLASSES):
-            m = mask == class_id
-            area = m.sum()
-            if area > 20 ** 2: # only include object if mask-area > 20^2 pixels
-                masks.append(m)
-                class_ids.append(class_id)
-
-        masks = np.stack(masks, axis=-1)
-
-        return masks, np.array(class_ids, dtype=np.int32)
+        #masks = []
+        #class_ids = []
+        #for class_id in range(1, BoxConfig.NUM_CLASSES):
+        #    m = mask != 0 # not backgrounds
+            #m = mask == class_id
+        #    area = m.sum()
+        #    if area > 20 ** 2: # only include object if mask-area > 20^2 pixels
+        #        masks.append(m)
+        #        class_ids.append(class_id)
+        #masks = np.stack(masks, axis=-1)
+        #return masks, np.array(class_ids, dtype=np.int32)
 
 
     def image_reference(self, image_id):
