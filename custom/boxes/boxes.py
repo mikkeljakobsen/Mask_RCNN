@@ -73,6 +73,8 @@ class BoxConfig(Config):
     DETECTION_MIN_CONFIDENCE = 0.9
 
     IMAGE_RESIZE_MODE = "none"
+    IMAGE_MIN_DIM = 480
+    IMAGE_MAX_DIM = 640
 
 
 ############################################################
