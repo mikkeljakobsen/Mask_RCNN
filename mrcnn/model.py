@@ -569,7 +569,11 @@ def detection_targets_graph(proposals, gt_class_ids, gt_boxes, gt_masks, config)
     positive_count = int(config.TRAIN_ROIS_PER_IMAGE *
                          config.ROI_POSITIVE_RATIO)
     positive_indices = tf.random.shuffle(positive_indices)[:positive_count]
+<<<<<<< HEAD
     positive_count = tf.shape(input=positive_indices)[0]
+=======
+    positive_count = tf.shape(positive_indices)[0]
+>>>>>>> 345376cd6034ddc62f995ba1b6c87870e8c86a2b
     # Negative ROIs. Add enough to maintain positive:negative ratio.
     r = 1.0 / config.ROI_POSITIVE_RATIO
     negative_count = tf.cast(r * tf.cast(positive_count, tf.float32), tf.int32) - positive_count
@@ -739,7 +743,11 @@ def refine_detections_graph(rois, probs, deltas, window, config):
     keep = tf.compat.v1.where(class_ids > 0)[:, 0]
     # Filter out low confidence boxes
     if config.DETECTION_MIN_CONFIDENCE:
+<<<<<<< HEAD
         conf_keep = tf.compat.v1.where(class_scores >= config.DETECTION_MIN_CONFIDENCE)[:, 0]
+=======
+        conf_keep = tf.where(class_scores >= config.DETECTION_MIN_CONFIDENCE)[:, 0]
+>>>>>>> 345376cd6034ddc62f995ba1b6c87870e8c86a2b
         keep = tf.sets.intersection(tf.expand_dims(keep, 0),
                                         tf.expand_dims(conf_keep, 0))
         keep = tf.sparse.to_dense(keep)[0]
@@ -792,7 +800,11 @@ def refine_detections_graph(rois, probs, deltas, window, config):
     # Coordinates are normalized.
     detections = tf.concat([
         tf.gather(refined_rois, keep),
+<<<<<<< HEAD
         tf.dtypes.cast(tf.gather(class_ids, keep), tf.float32)[..., tf.newaxis],
+=======
+        tf.cast(tf.gather(class_ids, keep), tf.float32)[..., tf.newaxis],
+>>>>>>> 345376cd6034ddc62f995ba1b6c87870e8c86a2b
         tf.gather(class_scores, keep)[..., tf.newaxis]
         ], axis=1)
 
@@ -2152,14 +2164,16 @@ class MaskRCNN(object):
         loss_names = [
             "rpn_class_loss",  "rpn_bbox_loss",
             "mrcnn_class_loss", "mrcnn_bbox_loss", "mrcnn_mask_loss"]
+        output_names = []
         for name in loss_names:
             layer = self.keras_model.get_layer(name)
-            if layer.output in self.keras_model.losses:
+            if layer.output.name in output_names:
                 continue
             loss = (
                 tf.reduce_mean(input_tensor=layer.output, keepdims=True)
                 * self.config.LOSS_WEIGHTS.get(name, 1.))
             self.keras_model.add_loss(loss)
+            output_names.append(layer.output.name)
 
         # Add L2 Regularization
         # Skip gamma and beta weights of batch normalization layers.
@@ -2183,7 +2197,11 @@ class MaskRCNN(object):
             loss = (
                 tf.reduce_mean(input_tensor=layer.output, keepdims=True)
                 * self.config.LOSS_WEIGHTS.get(name, 1.))
+<<<<<<< HEAD
             self.keras_model.add_metric(loss, name=name, aggregation='mean')
+=======
+            self.keras_model.add_metric(loss, name)
+>>>>>>> 345376cd6034ddc62f995ba1b6c87870e8c86a2b
 
     def set_trainable(self, layer_regex, keras_model=None, indent=0, verbose=1):
         """Sets model layers as trainable if their names match
