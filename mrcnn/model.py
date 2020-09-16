@@ -33,9 +33,9 @@ assert LooseVersion(keras.__version__) >= LooseVersion('2.0.8')
 gpu_devices = tf.config.experimental.list_physical_devices('GPU')
 for device in gpu_devices:
     tf.config.experimental.set_memory_growth(device, True)
-    #tf.config.experimental.set_virtual_device_configuration(
-    #    device,
-    #    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=5500)])
+    tf.config.experimental.set_virtual_device_configuration(
+        device,
+        [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=5500)])
 
 
 ############################################################
