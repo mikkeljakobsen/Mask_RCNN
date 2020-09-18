@@ -89,7 +89,7 @@ class BoxConfig(Config):
     # Number of classes (including background)
     NUM_CLASSES = 1 + 1  # BOX has 2 classes
     STEPS_PER_EPOCH = 2000 / IMAGES_PER_GPU
-    VALIDATION_STEPS = 50 / IMAGES_PER_GPU
+    VALIDATION_STEPS = 100 / IMAGES_PER_GPU
     
     # Use smaller anchors because our image and objects are small
     RPN_ANCHOR_SCALES = (16, 32, 64, 128, 256)  # anchor side in pixels
@@ -97,7 +97,9 @@ class BoxConfig(Config):
     # Reduce training ROIs per image because the images are small and have
     # few objects. Aim to allow ROI sampling to pick 33% positive ROIs.
     TRAIN_ROIS_PER_IMAGE = 64
-
+    
+    # Require min 90% detection confidence
+    DETECTION_MIN_CONFIDENCE = 0.9
 ############################################################
 #  Dataset
 ############################################################
@@ -417,7 +419,7 @@ if __name__ == '__main__':
 #        print("Training network heads")
 #        model.train(dataset_train, dataset_val,
 #                    learning_rate=config.LEARNING_RATE,
-#                    epochs=60,
+#                    epochs=40,
 #                    layers='heads',
 #                    augmentation=augmentation)
 
@@ -426,7 +428,7 @@ if __name__ == '__main__':
 #        print("Fine tune Resnet stage 4 and up")
 #        model.train(dataset_train, dataset_val,
 #                    learning_rate=config.LEARNING_RATE,
-#                    epochs=100,
+#                    epochs=80,
 #                    layers='4+',
 #                    augmentation=augmentation)
 
