@@ -546,6 +546,7 @@ def display_results(image, boxes, masks, class_ids, class_names, scores=None,
                 box = boxes[k]
                 cls = class_names[class_ids[k]-1]  # Skip the Background
                 score = scores[k]
+                print((box[1], box[0]), (box[3], box[2]), color)
                 cv2.rectangle(image, (box[1], box[0]), (box[3], box[2]), color, 1)
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 cv2.putText(image, '{}: {:.3f}'.format(cls, score), (box[1], box[0]),
@@ -565,3 +566,4 @@ def display_results(image, boxes, masks, class_ids, class_names, scores=None,
             cv2.imwrite(os.path.join(save_dir, img_name), image)
 
         return None
+

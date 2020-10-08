@@ -89,7 +89,7 @@ class BoxConfig(Config):
     # Number of classes (including background)
     NUM_CLASSES = 1 + 1  # BOX has 2 classes
     STEPS_PER_EPOCH = 2000 / IMAGES_PER_GPU
-    VALIDATION_STEPS = 100 / IMAGES_PER_GPU
+    VALIDATION_STEPS = 200 / IMAGES_PER_GPU
     
     # Use smaller anchors because our image and objects are small
     RPN_ANCHOR_SCALES = (16, 32, 64, 128, 256)  # anchor side in pixels
@@ -100,6 +100,7 @@ class BoxConfig(Config):
     
     # Require min 90% detection confidence
     DETECTION_MIN_CONFIDENCE = 0.9
+    BACKBONE = "resnet50"
 ############################################################
 #  Dataset
 ############################################################
@@ -135,9 +136,13 @@ class BoxDataset(utils.Dataset):
 
         # Add images
         for i in image_ids:
+            if subset == "test":
+                file_path = path=os.path.join(image_dir, box.imgs[i]['path'][1:])
+            else:                
+                file_path = path=os.path.join(image_dir, box.imgs[i]['file_name'])
             self.add_image(
                 "box", image_id=i,
-                path=os.path.join(image_dir, box.imgs[i]['file_name']),
+                path=file_path,
                 width=box.imgs[i]["width"],
                 height=box.imgs[i]["height"],
                 annotations=box.loadAnns(box.getAnnIds(
@@ -231,7 +236,7 @@ class BoxDataset(utils.Dataset):
 #  COCO Evaluation
 ############################################################
 
-def build_coco_results(dataset, image_ids, rois, class_ids, scores, masks):
+def build_box_results(dataset, image_ids, rois, class_ids, scores, masks):
     """Arrange resutls to match COCO specs in http://boxdataset.org/#format
     """
     # If no results, return an empty list
@@ -335,9 +340,9 @@ if __name__ == '__main__':
                         metavar="/path/to/logs/",
                         help='Logs and checkpoints directory (default=logs/)')
     parser.add_argument('--limit', required=False,
-                        default=500,
+                        default=123,
                         metavar="<image count>",
-                        help='Images to use for evaluation (default=500)')
+                        help='Images to use for evaluation (default=123)')
     parser.add_argument('--download', required=False,
                         default=False,
                         metavar="<True|False>",
@@ -408,6 +413,16 @@ if __name__ == '__main__':
         val_type = "val"
         dataset_val.load_box(args.dataset, val_type, class_ids=CLASS_IDS)
         dataset_val.prepare()
+        
+        # Test dataset
+        dataset_test = BoxDataset()
+        dataset_test.load_box(args.dataset, "test", class_ids=CLASS_IDS)
+        dataset_test.prepare()
+        
+        # Test2 dataset
+        dataset_test2 = BoxDataset()
+        dataset_test2.load_box(args.dataset, "test2", class_ids=CLASS_IDS)
+        dataset_test2.prepare()
 
         # Image Augmentation
         # Right/Left flip 50% of the time
@@ -416,35 +431,42 @@ if __name__ == '__main__':
         # *** This training schedule is an example. Update to your needs ***
 
         # Training - Stage 1
-#        print("Training network heads")
-#        model.train(dataset_train, dataset_val,
-#                    learning_rate=config.LEARNING_RATE,
-#                    epochs=40,
-#                    layers='heads',
-#                    augmentation=augmentation)
+        print("Training network heads")
+        model.train(dataset_train, dataset_val,
+                    learning_rate=config.LEARNING_RATE,
+                    epochs=100,
+                    layers='heads',
+                    augmentation=augmentation)
 
         # Training - Stage 2
         # Finetune layers from ResNet stage 4 and up
-#        print("Fine tune Resnet stage 4 and up")
-#        model.train(dataset_train, dataset_val,
-#                    learning_rate=config.LEARNING_RATE,
-#                    epochs=80,
-#                    layers='4+',
-#                    augmentation=augmentation)
+        print("Fine tune Resnet stage 4 and up")
+        model.train(dataset_train, dataset_val,
+                    learning_rate=config.LEARNING_RATE,
+                    epochs=200,
+                    layers='4+',
+                    augmentation=augmentation)
 
         # Training - Stage 3
         # Fine tune all layers
-        print("Fine tune all layers")
-        model.train(dataset_train, dataset_val,
-                    learning_rate=config.LEARNING_RATE / 10,
-                    epochs=100,
-                    layers='all',
-                    augmentation=augmentation)
+#        print("Fine tune all layers")
+#        model.train(dataset_train, dataset_val,
+#                    learning_rate=config.LEARNING_RATE / 10,
+#                    epochs=160,
+#                    layers='all',
+#                    augmentation=augmentation)
 
+        # Training - Stage 4
+        print("Training network heads - transfer learning on real data")
+        model.train(dataset_test2, dataset_test,
+                    learning_rate=config.LEARNING_RATE,
+                    epochs=220,
+                    layers='heads',
+                    augmentation=augmentation)
     elif args.command == "evaluate":
         # Validation dataset
         dataset_val = BoxDataset()
-        val_type = "val"
+        val_type = "test"
         box = dataset_val.load_box(args.dataset, val_type, return_box=True)
         dataset_val.prepare()
         print("Running COCO evaluation on {} images.".format(args.limit))
